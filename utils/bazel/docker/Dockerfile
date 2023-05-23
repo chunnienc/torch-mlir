@@ -40,4 +40,7 @@ RUN python3 -m pip install --upgrade --ignore-installed -r requirements.txt
 RUN apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
+# Enable LLVM symbolizer
+RUN ln -s /usr/bin/llvm-symbolizer-16 /usr/bin/llvm-symbolizer
+
 WORKDIR /opt/src/torch-mlir/utils/bazel
