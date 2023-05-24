@@ -24,6 +24,35 @@ new_local_repository(
     path = "../../externals/llvm-project",
 )
 
+# ==================== TensorFlow dependency begin ====================
+TENSORFLOW_COMMIT = "53c92b40d022e33421816148dc74d9d5322b1cf1"
+
+http_archive(
+    name = "org_tensorflow",
+    strip_prefix = "tensorflow-" + TENSORFLOW_COMMIT,
+    urls = [
+        "https://github.com/tensorflow/tensorflow/archive/" + TENSORFLOW_COMMIT +
+        ".tar.gz",
+    ],
+)
+
+load("@org_tensorflow//tensorflow:workspace3.bzl", "tf_workspace3")
+
+tf_workspace3()
+
+load("@org_tensorflow//tensorflow:workspace2.bzl", "tf_workspace2")
+
+tf_workspace2()
+
+load("@org_tensorflow//tensorflow:workspace1.bzl", "tf_workspace1")
+
+tf_workspace1()
+
+load("@org_tensorflow//tensorflow:workspace0.bzl", "tf_workspace0")
+
+tf_workspace0()
+# ==================== TensorFlow dependency begin ====================
+
 load("@llvm-raw//utils/bazel:configure.bzl", "llvm_configure", "llvm_disable_optional_support_deps")
 
 llvm_configure(
@@ -74,9 +103,8 @@ load("@io_bazel_rules_go//go:deps.bzl", "go_rules_dependencies")
 
 go_rules_dependencies()
 
-load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains")
-
-go_register_toolchains(version = "1.17.2")
+# load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains")
+# go_register_toolchains(version = "1.17.2")
 
 http_archive(
     name = "bazel_gazelle",
