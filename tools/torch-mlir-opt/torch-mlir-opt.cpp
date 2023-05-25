@@ -10,7 +10,13 @@
 #include "mlir/InitAllDialects.h"
 #include "mlir/InitAllPasses.h"
 #include "mlir/Tools/mlir-opt/MlirOptMain.h"
+#include "tensorflow/compiler/mlir/tensorflow/dialect_registration.h"
+// #include "tensorflow/compiler/xla/mlir_hlo/mhlo/IR/register.h"
 #include "torch-mlir/InitAll.h"
+
+#ifndef TORCH_MLIR_ENABLE_STABLEHLO
+#define TORCH_MLIR_ENABLE_STABLEHLO 1
+#endif
 
 #ifdef TORCH_MLIR_ENABLE_STABLEHLO
 #include "mhlo/IR/hlo_ops.h"
@@ -27,7 +33,7 @@ int main(int argc, char **argv) {
   DialectRegistry registry;
   registerAllDialects(registry);
   mlir::torch::registerAllDialects(registry);
-  
+
 #ifdef TORCH_MLIR_ENABLE_STABLEHLO
   mlir::stablehlo::registerAllDialects(registry);
   registry.insert<mlir::mhlo::MhloDialect>();
@@ -37,6 +43,10 @@ int main(int argc, char **argv) {
   mlir::mhlo::registerHloLegalizeToLinalgPass();
   mlir::mhlo::registerTestUnfuseBatchNormPass();
 #endif
+
+  // Tensorflow dialects and passes
+  mlir::RegisterAllTensorFlowDialects(registry);
+
   return mlir::asMainReturnCode(mlir::MlirOptMain(
       argc, argv, "MLIR modular optimizer driver\n", registry));
 }

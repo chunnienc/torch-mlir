@@ -14,3 +14,5 @@ build --cxxopt=-DMLIR_PYTHON_PACKAGE_PREFIX=torch_mlir.
 
 # Required by tensorflow
 common --experimental_repo_remote_exec
+build --copt=-Wno-gnu-offsetof-extensions
+build --cxxopt=-Wno-gnu-offsetof-extensions
