@@ -841,5 +841,7 @@ cc_binary(
         "@org_tensorflow//tensorflow/compiler/mlir/tensorflow:tensorflow_passes",
         "@org_tensorflow//tensorflow/compiler/mlir/tensorflow:tf_graph_optimization_pass",
         "@org_tensorflow//tensorflow/compiler/mlir/tensorflow:tf_legalize_hlo",
+        "@org_tensorflow//tensorflow/compiler/xla/mlir/framework/transforms:passes",
+        "@org_tensorflow//tensorflow/compiler/xla/mlir_hlo:all_passes",
     ],
 )

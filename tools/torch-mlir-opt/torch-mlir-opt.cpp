@@ -7,16 +7,20 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "mlir/InitAllDialects.h"
-#include "mlir/InitAllPasses.h"
-#include "mlir/Tools/mlir-opt/MlirOptMain.h"
-#include "tensorflow/compiler/mlir/tensorflow/dialect_registration.h"
-// #include "tensorflow/compiler/xla/mlir_hlo/mhlo/IR/register.h"
-#include "torch-mlir/InitAll.h"
-
 #ifndef TORCH_MLIR_ENABLE_STABLEHLO
 #define TORCH_MLIR_ENABLE_STABLEHLO 1
 #endif
+
+#include "mlir/InitAllDialects.h"
+#include "mlir/InitAllPasses.h"
+#include "mlir/Tools/mlir-opt/MlirOptMain.h"
+#include "torch-mlir/InitAll.h"
+
+// tensorflow includes
+#include "tensorflow/compiler/mlir/tensorflow/dialect_registration.h"
+#include "tensorflow/compiler/mlir/tensorflow/transforms/passes.h"
+#include "tensorflow/compiler/xla/mlir_hlo/lhlo/transforms/passes.h"
+#include "tensorflow/compiler/xla/mlir_hlo/mhlo/transforms/passes.h"
 
 #ifdef TORCH_MLIR_ENABLE_STABLEHLO
 #include "mhlo/IR/hlo_ops.h"
@@ -46,6 +50,10 @@ int main(int argc, char **argv) {
 
   // Tensorflow dialects and passes
   mlir::RegisterAllTensorFlowDialects(registry);
+  mlir::registerTransformsPasses();
+  mlir::registerTensorFlowPasses();
+  mlir::mhlo::registerAllMhloPasses();
+  mlir::lmhlo::registerAllLmhloPasses();
 
   return mlir::asMainReturnCode(mlir::MlirOptMain(
       argc, argv, "MLIR modular optimizer driver\n", registry));
