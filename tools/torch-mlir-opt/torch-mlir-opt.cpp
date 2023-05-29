@@ -16,11 +16,15 @@
 #include "mlir/Tools/mlir-opt/MlirOptMain.h"
 #include "torch-mlir/InitAll.h"
 
-// tensorflow includes
+// Tensorflow includes
+#include "tensorflow/compiler/mlir/lite/stablehlo/transforms/op_stat_pass.h"
 #include "tensorflow/compiler/mlir/tensorflow/dialect_registration.h"
 #include "tensorflow/compiler/mlir/tensorflow/transforms/passes.h"
 #include "tensorflow/compiler/xla/mlir_hlo/lhlo/transforms/passes.h"
 #include "tensorflow/compiler/xla/mlir_hlo/mhlo/transforms/passes.h"
+
+// Experiment includes
+#include "mlir/Pass/PassManager.h"
 
 #ifdef TORCH_MLIR_ENABLE_STABLEHLO
 #include "mhlo/IR/hlo_ops.h"
@@ -54,6 +58,18 @@ int main(int argc, char **argv) {
   mlir::registerTensorFlowPasses();
   mlir::mhlo::registerAllMhloPasses();
   mlir::lmhlo::registerAllLmhloPasses();
+
+  // passes for experiments
+  mlir::registerPass([]() { return mlir::createCanonicalizerPass(); });
+  mlir::registerPass([]() { return mlir::createPrintOpStatsPass(); });
+  mlir::PassPipelineRegistration<>(
+      "odml-print-op-stats",
+      "Prints out a detailed report of conversion stats with: success or not, "
+      "% of Ops non-converted, list of non-converted Ops, etc. It get the "
+      "stats based on the list in `TFL::mhlo::GetAcceptedDialects()`.",
+      [](OpPassManager &pm) {
+        pm.addPass(mlir::odml::createPrintOpStatsPass());
+      });
 
   return mlir::asMainReturnCode(mlir::MlirOptMain(
       argc, argv, "MLIR modular optimizer driver\n", registry));

@@ -835,6 +835,7 @@ cc_binary(
         "@llvm-project//mlir:AllPassesAndDialects",
         "@llvm-project//mlir:MlirOptLib",
         "@llvm-project//mlir:Transforms",
+        "@org_tensorflow//tensorflow/compiler/mlir/lite/stablehlo:op_stat_pass",
         "@org_tensorflow//tensorflow/compiler/mlir/tensorflow",
         "@org_tensorflow//tensorflow/compiler/mlir/tensorflow:mlir_roundtrip_pass_registration",
         "@org_tensorflow//tensorflow/compiler/mlir/tensorflow:mlprogram_util",
