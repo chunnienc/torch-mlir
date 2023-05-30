@@ -69,10 +69,10 @@ llvm_configure(
 
 # llvm_disable_optional_support_deps()
 
-local_repository(
-    name = "mlir-hlo",
-    path = "../../externals/mlir-hlo/",
-)
+# local_repository(
+#     name = "mlir-hlo",
+#     path = "../../externals/mlir-hlo/",
+# )
 
 new_local_repository(
     name = "torch-mlir-raw",

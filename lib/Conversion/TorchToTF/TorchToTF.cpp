@@ -95,12 +95,14 @@ public:
     MLIRContext *context = &getContext();
     ConversionTarget target(*context);
 
-    target.addLegalDialect<tensor::TensorDialect, arith::ArithDialect,
-                           TF::TensorFlowDialect, func::FuncDialect,
-                           tensor::TensorDialect, shape::ShapeDialect,
-                           scf::SCFDialect>();
-    target.addIllegalDialect<stablehlo::StablehloDialect, chlo::ChloDialect,
-                             mhlo::MhloDialect>();
+    target.addLegalDialect<TF::TensorFlowDialect, func::FuncDialect>();
+
+    target.addIllegalDialect<mhlo::MhloDialect, chlo::ChloDialect>();
+    target.addIllegalDialect<stablehlo::StablehloDialect, tensor::TensorDialect,
+                             arith::ArithDialect, shape::ShapeDialect,
+                             scf::SCFDialect>();
+
+    target.addLegalOp<chlo::MinimumBroadcastShapesOp>();
 
     // tf-legalize-hlo
     target.addLegalOp<func::CallOp, func::ConstantOp, arith::ConstantOp>();
@@ -126,7 +128,7 @@ public:
                                    target, getContext());
 
     bool legalize_broadcasts_ = true;
-    bool expand_compositions_ = false;
+    bool expand_compositions_ = true;
     if (legalize_broadcasts_) {
       chlo::populateChloBroadcastingPatterns(&getContext(), &patterns);
     }
@@ -139,8 +141,7 @@ public:
 
     tf_to_torch::PopulateLegalizeHloToTfPatterns(&patterns, &getContext());
 
-    target.addLegalDialect<Torch::TorchDialect>();
-
+    // DenseSet<Operation *> legalizedOps;
     if (failed(applyPartialConversion(getOperation(), target,
                                       std::move(patterns)))) {
       return signalPassFailure();
