@@ -72,11 +72,11 @@ int main(int argc, char **argv) {
         pm.addPass(mlir::odml::createPrintOpStatsPass());
       });
 
-  mlir::PassPipelineRegistration<>(
-      "torch-backend-to-tf", "(Torch-TF Experimental) Convert Torch Ops to TF Ops.",
-      [](OpPassManager &pm) {
-        pm.addPass(mlir::torch::createConvertTorchToTFPass());
-      });
+  // mlir::PassPipelineRegistration<>(
+  //     "torch-backend-to-tf", "(Torch-TF Experimental) Convert Torch Ops to TF Ops.",
+  //     [](OpPassManager &pm) {
+  //       pm.addPass(mlir::torch::createConvertTorchToTFPass());
+  //     });
 
   return mlir::asMainReturnCode(mlir::MlirOptMain(
       argc, argv, "MLIR modular optimizer driver\n", registry));
