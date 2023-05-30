@@ -73,7 +73,7 @@ int main(int argc, char **argv) {
       });
 
   mlir::PassPipelineRegistration<>(
-      "torch-backend-to-tf", "(Experiment) Convert Torch Ops to  TF Ops.",
+      "torch-backend-to-tf", "(Torch-TF Experimental) Convert Torch Ops to TF Ops.",
       [](OpPassManager &pm) {
         pm.addPass(mlir::torch::createConvertTorchToTFPass());
       });

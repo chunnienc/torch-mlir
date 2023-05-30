@@ -155,9 +155,9 @@ def ConvertTorchToStablehlo : Pass<"convert-torch-to-stablehlo", "func::FuncOp">
 #endif
 
 def ConvertTorchToTF : Pass<"convert-torch-to-tf", "func::FuncOp"> {
-  let summary = "(Experiment) Convert Torch ops to TF ops";
+  let summary = "(Torch-TF Experimental) Convert Torch ops to TF ops";
   let description = [{
-    (Experiment) Convert Torch ops to TF ops.
+    (Torch-TF Experimental) Convert Torch ops to TF ops.
   }];
   let constructor = "mlir::torch::createConvertTorchToTFPass()";
 
