@@ -9,14 +9,18 @@ PASS_PIPELINE="
         stablehlo-legalize-to-hlo,
         func.func(chlo-legalize-to-hlo),
         func.func(tf-legalize-hlo),
-        print-op-stats
+        print-op-stats,
     )"
 
 
-PASS_PIPELINE_NO_COMMENTS=$(sed -E 's/\#.*|(\/\/).*//g' <<< "$PASS_PIPELINE")
-PASS_PIPELINE_NO_COMMENTS_SPACES=$(echo $PASS_PIPELINE_NO_COMMENTS | sed 's/ //g')
+# Remove comment lines
+PASS_PIPELINE=$(sed -E 's/\#.*|(\/\/).*//g' <<< "$PASS_PIPELINE")
+# Remove spaces
+PASS_PIPELINE=$(echo $PASS_PIPELINE | sed 's/ //g')
+# Remove trailing commas
+PASS_PIPELINE=$(echo $PASS_PIPELINE | sed 's/,)/)/g')
 
 bazel run @torch-mlir//:torch-mlir-opt -- \
     /models/resnet18_raw.mlir \
     -o /models/test.mlir \
-    -pass-pipeline="$PASS_PIPELINE_NO_COMMENTS_SPACES"
+    -pass-pipeline="$PASS_PIPELINE"
