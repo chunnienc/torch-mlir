@@ -620,13 +620,13 @@ void mlir::torch::torch_to_stablehlo::populatePoolingOpPatternsAndLegality(
     TypeConverter &typeConverter, RewritePatternSet &patterns,
     ConversionTarget &target, const TorchToStablehloOptions &options) {
   MLIRContext *context = patterns.getContext();
-  target.addIllegalOp<AtenMaxPool2dOp>();
+  /* target.addIllegalOp<AtenMaxPool2dOp>(); */
   patterns.add<ConvertAtenOp<AtenMaxPool2dOp>>(typeConverter, context, options);
-  target.addIllegalOp<AtenAvgPool2dOp>();
+  /* target.addIllegalOp<AtenAvgPool2dOp>(); */
   patterns.add<ConvertAtenOp<AtenAvgPool2dOp>>(typeConverter, context, options);
-  target.addIllegalOp<AtenMaxPool2dWithIndicesOp>();
+  /* target.addIllegalOp<AtenMaxPool2dWithIndicesOp>(); */
   patterns.add<ConvertAtenOp<AtenMaxPool2dWithIndicesOp>>(typeConverter,
                                                           context, options);
-  target.addIllegalOp<AtenCumsumOp>();
+  /* target.addIllegalOp<AtenCumsumOp>(); */
   patterns.add<ConvertAtenOp<AtenCumsumOp>>(typeConverter, context, options);
 }

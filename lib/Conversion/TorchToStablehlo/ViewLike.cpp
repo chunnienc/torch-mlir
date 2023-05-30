@@ -424,7 +424,7 @@ void mlir::torch::torch_to_stablehlo::populateViewLikeOpPatternsAndLegality(
   MLIRContext *context = patterns.getContext();
 
 #define INSERT_ATENOP_PATTERN(AtenOp)                                          \
-  target.addIllegalOp<AtenOp>();                                               \
+  /* target.addIllegalOp<AtenOp>(); */                                               \
   patterns.add<ConvertAtenOp<AtenOp>>(typeConverter, context, options)
   INSERT_ATENOP_PATTERN(AtenSliceTensorOp);
   INSERT_ATENOP_PATTERN(AtenSqueezeOp);
@@ -433,7 +433,7 @@ void mlir::torch::torch_to_stablehlo::populateViewLikeOpPatternsAndLegality(
 #undef INSERT_ATENOP_PATTERN
 
 #define INSERT_VIEW_OP_PATTERN(AtenOp)                                         \
-  target.addIllegalOp<AtenOp>();                                               \
+  /* target.addIllegalOp<AtenOp>(); */                                               \
   patterns.add<ConvertAtenViewOp<AtenOp>>(typeConverter, context, options)
   INSERT_VIEW_OP_PATTERN(AtenViewOp);
   INSERT_VIEW_OP_PATTERN(AtenReshapeOp);

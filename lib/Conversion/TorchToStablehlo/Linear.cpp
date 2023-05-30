@@ -801,26 +801,26 @@ void mlir::torch::torch_to_stablehlo::populateLinearOpPatternsAndLegality(
   MLIRContext *context = patterns.getContext();
 
 #define INSERT_MATMUL_ATENOP_PATTERN(AtenOp)                                   \
-  target.addIllegalOp<AtenOp>();                                               \
+  /* target.addIllegalOp<AtenOp>(); */                                               \
   patterns.add<ConvertAtenMatMulOp<AtenOp>>(typeConverter, context, options)
   INSERT_MATMUL_ATENOP_PATTERN(AtenMatmulOp);
 #undef INSERT_MATMUL_ATEMOP_PATTERN
 
 #define INSERT_MM_ATENOP_PATTERN(AtenOp)                                       \
-  target.addIllegalOp<AtenOp>();                                               \
+  /* target.addIllegalOp<AtenOp>(); */                                               \
   patterns.add<ConvertAtenMmOp<AtenOp>>(typeConverter, context, options)
   INSERT_MM_ATENOP_PATTERN(AtenMmOp);
   INSERT_MM_ATENOP_PATTERN(AtenBmmOp);
 #undef INSERT_MM_ATEMOP_PATTERN
 
 #define INSERT_LINEAR_ATENOP_PATTERN(AtenOp)                                   \
-  target.addIllegalOp<AtenOp>();                                               \
+  /* target.addIllegalOp<AtenOp>(); */                                               \
   patterns.add<ConvertAtenLinearOp<AtenOp>>(typeConverter, context, options)
   INSERT_LINEAR_ATENOP_PATTERN(AtenLinearOp);
 #undef INSERT_LINEAR_ATEMOP_PATTERN
 
 #define INSERT_CONVOLUTION_ATENOP_PATTERN(AtenOp)                              \
-  target.addIllegalOp<AtenOp>();                                               \
+  /* target.addIllegalOp<AtenOp>(); */                                               \
   patterns.add<ConvertAtenConvolutionOp>(typeConverter, context, options)
   INSERT_CONVOLUTION_ATENOP_PATTERN(AtenConvolutionOp);
 #undef INSERT_CONVOLUTION_ATENOP_PATTERN

@@ -1580,13 +1580,13 @@ void mlir::torch::torch_to_stablehlo::populateBasicOpPatternsAndLegality(
     ConversionTarget &target, const TorchToStablehloOptions &options) {
   MLIRContext *context = patterns.getContext();
 
-  target.addIllegalOp<AtenTransposeIntOp>();
+  /* target.addIllegalOp<AtenTransposeIntOp>(); */
   patterns.add<ConvertAtenTransposeIntOp>(typeConverter, context);
-  target.addIllegalOp<RuntimeAssertOp>();
+  /* target.addIllegalOp<RuntimeAssertOp>(); */
   patterns.add<ConvertRuntimeAssertOp>(typeConverter, context);
 
 #define INSERT_UNARY_PATTERN(AtenOp, StablehloOp)                              \
-  target.addIllegalOp<AtenOp>();                                               \
+  /* target.addIllegalOp<AtenOp>(); */                                               \
   patterns.add<ConvertAtenUnaryOp<AtenOp, StablehloOp>>(typeConverter, context)
   INSERT_UNARY_PATTERN(AtenCloneOp, stablehlo::ConvertOp);
   INSERT_UNARY_PATTERN(AtenNegOp, stablehlo::NegOp);
@@ -1596,7 +1596,7 @@ void mlir::torch::torch_to_stablehlo::populateBasicOpPatternsAndLegality(
 #undef INSERT_UNARY_PATTERN
 
 #define INSERT_UNARY_FPONLY_PATTERN(AtenOp, StablehloOp)                       \
-  target.addIllegalOp<AtenOp>();                                               \
+  /* target.addIllegalOp<AtenOp>(); */                                               \
   patterns.add<ConvertAtenUnaryFPOnlyOp<AtenOp, StablehloOp>>(typeConverter,   \
                                                               context)
   INSERT_UNARY_FPONLY_PATTERN(AtenLogOp, stablehlo::LogOp);
@@ -1612,7 +1612,7 @@ void mlir::torch::torch_to_stablehlo::populateBasicOpPatternsAndLegality(
 #undef INSERT_UNARY_FPONLY_PATTERN
 
 #define INSERT_CONSTANT_FILL_PATTERN(AtenOp, fillVal)                          \
-  target.addIllegalOp<AtenOp>();                                               \
+  /* target.addIllegalOp<AtenOp>(); */                                               \
   patterns.add<ConvertAtenConstPatternOp<AtenOp, fillVal>>(typeConverter,      \
                                                            context)
   INSERT_CONSTANT_FILL_PATTERN(AtenOnesOp, 1);
@@ -1620,7 +1620,7 @@ void mlir::torch::torch_to_stablehlo::populateBasicOpPatternsAndLegality(
 #undef INSERT_CONSTANT_FILL_PATTERN
 
 #define INSERT_BINARY_ADDSUB_PATTERN(AtenOp, ChloOp)                           \
-  target.addIllegalOp<AtenOp>();                                               \
+  /* target.addIllegalOp<AtenOp>(); */                                               \
   patterns.add<ConvertAtenAddSubOp<AtenOp, ChloOp>>(typeConverter, context)
   INSERT_BINARY_ADDSUB_PATTERN(AtenAddTensorOp, chlo::BroadcastAddOp);
   INSERT_BINARY_ADDSUB_PATTERN(AtenAddScalarOp, chlo::BroadcastAddOp);
@@ -1630,7 +1630,7 @@ void mlir::torch::torch_to_stablehlo::populateBasicOpPatternsAndLegality(
 #undef INSERT_BINARY_ADDSUB_PATTERN
 
 #define INSERT_BINARY_MULDIV_PATTERN(AtenOp, ChloOp)                           \
-  target.addIllegalOp<AtenOp>();                                               \
+  /* target.addIllegalOp<AtenOp>(); */                                               \
   patterns.add<ConvertAtenMulDivOp<AtenOp, ChloOp>>(typeConverter, context)
   INSERT_BINARY_MULDIV_PATTERN(AtenMulTensorOp, chlo::BroadcastMulOp);
   INSERT_BINARY_MULDIV_PATTERN(AtenMulScalarOp, chlo::BroadcastMulOp);
@@ -1641,7 +1641,7 @@ void mlir::torch::torch_to_stablehlo::populateBasicOpPatternsAndLegality(
 #undef INSERT_BINARY_MULDIV_PATTERN
 
 #define INSERT_BINARY_COMPARE_PATTERN(AtenOp)                                  \
-  target.addIllegalOp<AtenOp>();                                               \
+  /* target.addIllegalOp<AtenOp>(); */                                               \
   patterns.add<ConvertAtenCompareOp<AtenOp>>(typeConverter, context)
 
   INSERT_BINARY_COMPARE_PATTERN(AtenGtTensorOp);
@@ -1659,7 +1659,7 @@ void mlir::torch::torch_to_stablehlo::populateBasicOpPatternsAndLegality(
 #undef INSERT_BINARY_COMPARE_PATTERN
 
 #define INSERT_BINARY_LOGICAL_PATTERN(AtenOp, ChloOp)                          \
-  target.addIllegalOp<AtenOp>();                                               \
+  /* target.addIllegalOp<AtenOp>(); */                                               \
   patterns.add<ConvertAtenLogicalBinaryOp<AtenOp, ChloOp>>(typeConverter,      \
                                                            context)
 
@@ -1669,7 +1669,7 @@ void mlir::torch::torch_to_stablehlo::populateBasicOpPatternsAndLegality(
 #undef INSERT_BINARY_LOGICAL_PATTERN
 
 #define INSERT_ATENOP_PATTERN(AtenOp)                                          \
-  target.addIllegalOp<AtenOp>();                                               \
+  /* target.addIllegalOp<AtenOp>(); */                                               \
   patterns.add<ConvertAtenOp<AtenOp>>(typeConverter, context, options)
 
   INSERT_ATENOP_PATTERN(AtenBroadcastToOp);
@@ -1703,7 +1703,7 @@ void mlir::torch::torch_to_stablehlo::populateBasicOpPatternsAndLegality(
 #undef INSERT_ATENOP_PATTERN
 
 #define INSERT_BINARY_BROADCAST_PATTERN(AtenOp, StablehloOp)                   \
-  target.addIllegalOp<AtenOp>();                                               \
+  /* target.addIllegalOp<AtenOp>(); */                                               \
   patterns.add<ConvertAtenBinaryBroadcastOp<AtenOp, StablehloOp>>(             \
       typeConverter, context)
   INSERT_BINARY_BROADCAST_PATTERN(AtenMaximumOp, chlo::BroadcastMaxOp);

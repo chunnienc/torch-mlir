@@ -536,7 +536,7 @@ void mlir::torch::torch_to_stablehlo::
   MLIRContext *context = patterns.getContext();
 
 #define INSERT_ATENOP_PATTERN(AtenOp)                                          \
-  target.addIllegalOp<AtenOp>();                                               \
+  /* target.addIllegalOp<AtenOp>(); */                                               \
   patterns.add<ConvertAtenOp<AtenOp>>(typeConverter, context, options)
   INSERT_ATENOP_PATTERN(AtenEmbeddingOp);
   INSERT_ATENOP_PATTERN(AtenIndexSelectOp);

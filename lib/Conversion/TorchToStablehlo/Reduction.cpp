@@ -834,7 +834,7 @@ void mlir::torch::torch_to_stablehlo::populateReductionOpPatternsAndLegality(
     ConversionTarget &target, const TorchToStablehloOptions &options) {
   MLIRContext *context = patterns.getContext();
 #define INSERT_ATEN_REDUCTION_OP_PATTERN(AtenOp)                               \
-  target.addIllegalOp<AtenOp>();                                               \
+  /* target.addIllegalOp<AtenOp>(); */                                               \
   patterns.add<ConvertAtenReductionOp<AtenOp>>(typeConverter, context, options)
   INSERT_ATEN_REDUCTION_OP_PATTERN(AtenArgmaxOp);
   INSERT_ATEN_REDUCTION_OP_PATTERN(AtenMaxDimOp);
