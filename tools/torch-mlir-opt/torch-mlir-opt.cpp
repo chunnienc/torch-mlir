@@ -25,6 +25,7 @@
 
 // Experiment includes
 #include "mlir/Pass/PassManager.h"
+#include "torch-mlir/Conversion/TorchToTF/TorchToTF.h"
 
 #ifdef TORCH_MLIR_ENABLE_STABLEHLO
 #include "mhlo/IR/hlo_ops.h"
@@ -69,6 +70,12 @@ int main(int argc, char **argv) {
       "stats based on the list in `TFL::mhlo::GetAcceptedDialects()`.",
       [](OpPassManager &pm) {
         pm.addPass(mlir::odml::createPrintOpStatsPass());
+      });
+
+  mlir::PassPipelineRegistration<>(
+      "torch-backend-to-tf", "(Experiment) Convert Torch Ops to  TF Ops.",
+      [](OpPassManager &pm) {
+        pm.addPass(mlir::torch::createConvertTorchToTFPass());
       });
 
   return mlir::asMainReturnCode(mlir::MlirOptMain(

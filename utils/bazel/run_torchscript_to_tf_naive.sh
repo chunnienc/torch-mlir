@@ -1,14 +1,24 @@
 #!/bin/bash
 set -euo pipefail
 
+# PASS_PIPELINE="
+#     builtin.module(
+#         torchscript-module-to-torch-backend-pipeline,
+#         ###### Print torch ops ######
+#         print-op-stats,
+#         torch-backend-to-stablehlo-backend-pipeline,
+#         # odml-print-op-stats,
+#         stablehlo-legalize-to-hlo,
+#         func.func(chlo-legalize-to-hlo),
+#         func.func(tf-legalize-hlo),
+#         ###### Print all converted ops ######
+#         print-op-stats,
+#     )"
+
 PASS_PIPELINE="
     builtin.module(
         torchscript-module-to-torch-backend-pipeline,
-        torch-backend-to-stablehlo-backend-pipeline,
-        # odml-print-op-stats,
-        stablehlo-legalize-to-hlo,
-        func.func(chlo-legalize-to-hlo),
-        func.func(tf-legalize-hlo),
+        func.func(torch-backend-to-tf),
         print-op-stats,
     )"
 
