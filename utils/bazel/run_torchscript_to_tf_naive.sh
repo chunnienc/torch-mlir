@@ -9,14 +9,14 @@ OUTPUT_FILENAME=$(sed -E 's/(.mlir)?$/.mlir/g' <<< $OUTPUT_FILENAME)
 PASS_PIPELINE="
     builtin.module(
         torchscript-module-to-torch-backend-pipeline,
-        snapshot-op-locations {tag=torch filename=${OUTPUT_NAME}_torch.mlir)},
+        snapshot-op-locations {tag=torch filename=${OUTPUT_NAME}_torch.mlir},
         ###### Print torch ops ######
         print-op-stats,
         torch-backend-to-stablehlo-backend-pipeline,
-        snapshot-op-locations {tag=stablehlo filename=${OUTPUT_NAME}_stablehlo.mlir)},
+        snapshot-op-locations {tag=stablehlo filename=${OUTPUT_NAME}_stablehlo.mlir},
         stablehlo-legalize-to-hlo,
         func.func(chlo-legalize-to-hlo),
-        snapshot-op-locations {tag=hlo filename=${OUTPUT_NAME}_hlo.mlir)},
+        snapshot-op-locations {tag=hlo filename=${OUTPUT_NAME}_hlo.mlir},
         func.func(tf-legalize-hlo),
         ###### Print TF/HLO ops ######
         print-op-stats,
