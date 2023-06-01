@@ -18,6 +18,7 @@
 
 // Tensorflow includes
 #include "tensorflow/compiler/mlir/lite/stablehlo/transforms/op_stat_pass.h"
+#include "tensorflow/compiler/mlir/lite/stablehlo/transforms/rename_entrypoint_to_main.h"
 #include "tensorflow/compiler/mlir/tensorflow/dialect_registration.h"
 #include "tensorflow/compiler/mlir/tensorflow/transforms/passes.h"
 #include "tensorflow/compiler/xla/mlir_hlo/lhlo/transforms/passes.h"
@@ -71,9 +72,14 @@ int main(int argc, char **argv) {
       [](OpPassManager &pm) {
         pm.addPass(mlir::odml::createPrintOpStatsPass());
       });
+  mlir::PassPipelineRegistration<>(
+      "odml-rename-entry-point-to-main", "", [](OpPassManager &pm) {
+        pm.addPass(mlir::odml::CreateRenameEntrypointToMainPass());
+      });
 
   // mlir::PassPipelineRegistration<>(
-  //     "torch-backend-to-tf", "(Torch-TF Experimental) Convert Torch Ops to TF Ops.",
+  //     "torch-backend-to-tf", "(Torch-TF Experimental) Convert Torch Ops to TF
+  //     Ops.",
   //     [](OpPassManager &pm) {
   //       pm.addPass(mlir::torch::createConvertTorchToTFPass());
   //     });
