@@ -837,6 +837,8 @@ cc_binary(
         "@llvm-project//mlir:AllPassesAndDialects",
         "@llvm-project//mlir:MlirOptLib",
         "@llvm-project//mlir:Transforms",
+        # TODO: Make this target visible externally
+        "@org_tensorflow//tensorflow/compiler/mlir/lite:tf_tfl_passes",
         "@org_tensorflow//tensorflow/compiler/mlir/lite/stablehlo:rename_entrypoint_to_main",
         "@org_tensorflow//tensorflow/compiler/mlir/lite/stablehlo:op_stat_pass",
         "@org_tensorflow//tensorflow/compiler/mlir/tensorflow",

@@ -18,11 +18,23 @@
 
 // Tensorflow includes
 #include "tensorflow/compiler/mlir/lite/stablehlo/transforms/op_stat_pass.h"
-#include "tensorflow/compiler/mlir/lite/stablehlo/transforms/rename_entrypoint_to_main.h"
 #include "tensorflow/compiler/mlir/tensorflow/dialect_registration.h"
 #include "tensorflow/compiler/mlir/tensorflow/transforms/passes.h"
 #include "tensorflow/compiler/xla/mlir_hlo/lhlo/transforms/passes.h"
 #include "tensorflow/compiler/xla/mlir_hlo/mhlo/transforms/passes.h"
+
+// TF TFL passes includes
+#include "tensorflow/compiler/mlir/lite/quantization/quantization_config.h"
+#include "tensorflow/compiler/mlir/lite/quantization/quantization_passes.h"
+#include "tensorflow/compiler/mlir/lite/quantization/tensorflow/passes.h"
+#include "tensorflow/compiler/mlir/lite/stablehlo/transforms/rename_entrypoint_to_main.h"
+#include "tensorflow/compiler/mlir/lite/transforms/passes.h"
+#include "tensorflow/compiler/mlir/tensorflow/ir/tf_ops_a_m.h"
+#include "tensorflow/compiler/mlir/tensorflow/ir/tf_saved_model.h"
+#include "tensorflow/compiler/mlir/tensorflow/transforms/passes.h"
+// #include
+// "tensorflow/compiler/mlir/tensorflow/transforms/tf_saved_model_passes.h"
+// #include "tensorflow/compiler/mlir/tensorflow/translate/tf_mlir_translate.h"
 
 // Experiment includes
 #include "mlir/Pass/PassManager.h"
@@ -66,19 +78,34 @@ int main(int argc, char **argv) {
   mlir::registerPass([]() { return mlir::createPrintOpStatsPass(); });
   mlir::PassPipelineRegistration<>(
       "odml-print-op-stats",
-      "Prints out a detailed report of conversion stats with: success or not, "
-      "% of Ops non-converted, list of non-converted Ops, etc. It get the "
-      "stats based on the list in `TFL::mhlo::GetAcceptedDialects()`.",
+      "(ODML) Prints out a detailed report of conversion stats with: success "
+      "or not, % of Ops non-converted, list of non-converted Ops, etc. It get "
+      "the stats based on the list in `TFL::mhlo::GetAcceptedDialects()`.",
       [](OpPassManager &pm) {
         pm.addPass(mlir::odml::createPrintOpStatsPass());
       });
   mlir::PassPipelineRegistration<>(
-      "odml-rename-entry-point-to-main", "", [](OpPassManager &pm) {
+      "odml-rename-entry-point-to-main", "(ODML)", [](OpPassManager &pm) {
         pm.addPass(mlir::odml::CreateRenameEntrypointToMainPass());
       });
 
+  mlir::PassPipelineRegistration<>(
+      "tfl-legalize-jax-random",
+      "(TFL) Legalize jax random to tflite custom op. The "
+      "CreateLegalizeJaxRandom "
+      "Pass has to stay at because we need to replace the random function body "
+      "before being inlined.",
+      [](OpPassManager &pm) {
+        pm.addPass(mlir::TFL::CreateLegalizeJaxRandomPass());
+      });
+
+  mlir::PassPipelineRegistration<>("mlir-inliner", "", [](OpPassManager &pm) {
+    pm.addPass(mlir::createInlinerPass());
+  });
+
   // mlir::PassPipelineRegistration<>(
-  //     "torch-backend-to-tf", "(Torch-TF Experimental) Convert Torch Ops to TF
+  //     "torch-backend-to-tf",
+  //     "(Torch-TF Experimental) Convert Torch Ops to TF
   //     Ops.",
   //     [](OpPassManager &pm) {
   //       pm.addPass(mlir::torch::createConvertTorchToTFPass());
