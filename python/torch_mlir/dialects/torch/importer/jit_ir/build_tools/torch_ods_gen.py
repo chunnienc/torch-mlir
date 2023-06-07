@@ -347,6 +347,7 @@ def emit_ops(emitter_td: TextEmitter, registry: Registry):
     emit("aten::randn_like : (Tensor, int?, int?, Device?, bool?, int?) -> (Tensor)")
 
     emit_with_mutating_variants("aten::triu : (Tensor, int) -> (Tensor)")
+    emit_with_mutating_variants("aten::tril : (Tensor, int) -> (Tensor)")
     emit_with_mutating_variants("aten::round : (Tensor) -> (Tensor)", has_folder=True)
     emit_with_mutating_variants(
         "aten::index_put : (Tensor, Tensor?[], Tensor, bool) -> (Tensor)")
@@ -455,7 +456,7 @@ def emit_ops(emitter_td: TextEmitter, registry: Registry):
     emit("aten::dim : (Tensor) -> (int)", has_folder=True)
     emit("aten::size : (Tensor) -> (int[])", has_canonicalizer=True)
     emit("aten::Bool.Tensor : (Tensor) -> (bool)")
-    emit("aten::is_floating_point : (Tensor) -> (bool)")
+    emit("aten::is_floating_point : (Tensor) -> (bool)", has_folder=True)
     emit("aten::ones : (int[], int?, int?, Device?, bool?) -> (Tensor)")
     emit("aten::new_ones : (Tensor, int[], int?, int?, Device?, bool?) -> (Tensor)")
     emit("aten::zeros : (int[], int?, int?, Device?, bool?) -> (Tensor)")
@@ -465,6 +466,7 @@ def emit_ops(emitter_td: TextEmitter, registry: Registry):
     emit("aten::tensor.int : (int, int?, Device?, bool) -> (Tensor)")
     emit("aten::scalar_tensor : (Scalar, int?, int?, Device?, bool?) -> (Tensor)")
     emit("aten::_shape_as_tensor : (Tensor) -> (Tensor)")
+    emit("aten::isnan : (Tensor) -> (Tensor)")
     emit("aten::all : (Tensor) -> (Tensor)")
     emit("aten::all.bool : (bool[]) -> (bool)")
     emit("aten::any : (Tensor) -> (Tensor)")

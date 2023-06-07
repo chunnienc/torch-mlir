@@ -50,6 +50,9 @@ def _embedding_bag_helper(weight: List[int], indices: List[int], offsets: List[i
 def aten〇triu〡shape(self: List[int], diagonal: int = 0) -> List[int]:
     return upstream_shape_functions.unary(self)
 
+def aten〇tril〡shape(self: List[int], diagonal: int = 0) -> List[int]:
+    return upstream_shape_functions.unary(self)
+
 def aten〇atan〡shape(self: List[int]) -> List[int]:
     return upstream_shape_functions.unary(self)
 
@@ -214,6 +217,12 @@ def aten〇lift_fresh_copy〡shape(self: List[int]) -> List[int]:
 
 def aten〇_log_softmax_backward_data〡shape(grad_output: List[int], output: List[int], dim: int, input_dtype: int) -> List[int]:
     return upstream_shape_functions.unary(grad_output)
+
+def aten〇isnan〡shape(self: List[int]) -> List[int]:
+    return upstream_shape_functions.unary(self)
+
+def aten〇ne〇Tensor〡shape(self: List[int], other: List[int]) -> List[int]:
+    return upstream_shape_functions.broadcast(self, other)
 
 def aten〇eq〇Scalar〡shape(self: List[int], other: float) -> List[int]:
     return upstream_shape_functions.unary(self)
@@ -1818,6 +1827,11 @@ def aten〇triu〡dtype(self_rank_dtype: Tuple[int, int], diagonal: int = 0) -> 
     self_rank, self_dtype = self_rank_dtype
     return self_dtype
 
+@check_dtype_function(_check_tensors_with_the_same_dtype(tensor_shapes=[(2, 3)]))
+def aten〇tril〡dtype(self_rank_dtype: Tuple[int, int], diagonal: int = 0) -> int:
+    self_rank, self_dtype = self_rank_dtype
+    return self_dtype
+
 @check_dtype_function(_check_tensors_with_the_same_dtype(num_of_tensors=1))
 def aten〇uniform〡dtype(self_rank_dtype: Tuple[int, int], from_: float = 0., to: float = 1., generator: Any = None) -> int:
     self_rank, self_dtype = self_rank_dtype
@@ -1966,6 +1980,14 @@ def aten〇lt〇Tensor〡dtype(self_rank_dtype: Tuple[int, int], other_rank_dtyp
 
 @check_dtype_function(_check_two_tensor_op())
 def aten〇le〇Tensor〡dtype(self_rank_dtype: Tuple[int, int], other_rank_dtype: Tuple[int, int]) -> int:
+    return torch.bool
+
+@check_dtype_function(_check_tensors_with_the_same_dtype(num_of_tensors=1))
+def aten〇isnan〡dtype(self_rank_dtype: Tuple[int, int]) -> int:
+    return torch.bool
+
+@check_dtype_function(_check_two_tensor_op())
+def aten〇ne〇Tensor〡dtype(self_rank_dtype: Tuple[int, int], other_rank_dtype: Tuple[int, int]) -> int:
     return torch.bool
 
 @check_dtype_function(

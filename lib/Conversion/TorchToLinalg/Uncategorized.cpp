@@ -142,7 +142,8 @@ static Value createCompareTensorOp(OpBuilder &b, Location loc, OpTy op,
                     std::is_same<OpTy, AtenLeTensorOp>() ||
                     std::is_same<OpTy, AtenGtTensorOp>() ||
                     std::is_same<OpTy, AtenGeTensorOp>() ||
-                    std::is_same<OpTy, AtenEqTensorOp>(),
+                    std::is_same<OpTy, AtenEqTensorOp>() ||
+                    std::is_same<OpTy, AtenNeTensorOp>(),
                 "unimplemented: op type not supported");
 
   Type lhsDtype = lhs.getType();
@@ -172,7 +173,35 @@ static Value createCompareTensorOp(OpBuilder &b, Location loc, OpTy op,
   if constexpr (std::is_same<OpTy, AtenEqTensorOp>()) {
     return createEqual(b, loc, elementalType, lhs, rhs);
   }
+  if constexpr (std::is_same<OpTy, AtenNeTensorOp>()) {
+    return createNotEqual(b, loc, elementalType, lhs, rhs);
+  }
   llvm_unreachable("unimplemented: op type not supported");
+}
+
+template <arith::CmpIPredicate predicate>
+static LogicalResult
+createTriangularMatrix(OpBuilder &b, Location loc, ValueRange payloadArgs,
+                       Operation *op, ArrayRef<Value> operands, Value &result) {
+  auto inputType = operands[0].getType().cast<RankedTensorType>();
+  uint64_t inputRank = inputType.getRank();
+
+  // Use the indices of the two innermost dimensions.
+  auto rowIndex = b.create<linalg::IndexOp>(loc, inputRank - 2);
+  Value rowIndexI64 = castIndexToInt64(b, loc, rowIndex);
+  auto colIndex = b.create<linalg::IndexOp>(loc, inputRank - 1);
+  Value colIndexI64 = castIndexToInt64(b, loc, colIndex);
+
+  // columnIndex >= rowIndex + diagonal?
+  auto sum =
+      b.create<arith::AddIOp>(loc, rowIndexI64, /*diagonal=*/operands[1]);
+  auto pred = b.create<arith::CmpIOp>(loc, predicate, colIndexI64, sum);
+
+  Value scalar = payloadArgs[0];
+  Type elementType = inputType.getElementType();
+  Value zero = getConstant(b, loc, 0, elementType);
+  result = b.create<arith::SelectOp>(loc, pred, scalar, zero);
+  return success();
 }
 
 static Value createLinalgPayloadCalculationForElementwiseOp(
@@ -568,6 +597,10 @@ static Value createLinalgPayloadCalculationForElementwiseOp(
   }
   if (auto eqTensor = dyn_cast<AtenEqTensorOp>(op)) {
     return createCompareTensorOp(b, loc, eqTensor, payloadArgs[0],
+                                 payloadArgs[1]);
+  }
+  if (auto neTensor = dyn_cast<AtenNeTensorOp>(op)) {
+    return createCompareTensorOp(b, loc, neTensor, payloadArgs[0],
                                  payloadArgs[1]);
   }
   if (auto div = dyn_cast<AtenDivTensorOp>(op)) {
@@ -1056,30 +1089,19 @@ static Value createLinalgPayloadCalculationForElementwiseOp(
   }
 
   if (auto triu = dyn_cast<AtenTriuOp>(op)) {
-    // Check if the rank of the input tensor is valid.
-    AtenTriuOp::Adaptor adaptor(operands);
-    auto inputType = adaptor.getSelf().getType().cast<RankedTensorType>();
-    uint64_t inputRank = inputType.getRank();
-    if (inputRank < 2) {
-      triu.emitError("too few dimensions to compute triangular part of matrix");
+    Value result;
+    if (failed(createTriangularMatrix<arith::CmpIPredicate::sge>(
+            b, loc, payloadArgs, op, operands, result)))
       return nullptr;
-    }
+    return result;
+  }
 
-    // Use the indices of the two innermost dimensions.
-    auto rowIndex = b.create<linalg::IndexOp>(loc, inputRank - 2);
-    Value rowIndexI64 = castIndexToInt64(b, loc, rowIndex);
-    auto colIndex = b.create<linalg::IndexOp>(loc, inputRank - 1);
-    Value colIndexI64 = castIndexToInt64(b, loc, colIndex);
-
-    // columnIndex >= rowIndex + diagonal?
-    auto sum = b.create<arith::AddIOp>(loc, rowIndexI64, adaptor.getDiagonal());
-    auto pred = b.create<arith::CmpIOp>(loc, arith::CmpIPredicate::sge,
-                                        colIndexI64, sum);
-
-    Value scalar = payloadArgs[0];
-    Type elementType = inputType.getElementType();
-    Value zero = getConstant(b, loc, 0, elementType);
-    return b.create<arith::SelectOp>(loc, pred, scalar, zero);
+  if (auto tril = dyn_cast<AtenTrilOp>(op)) {
+    Value result;
+    if (failed(createTriangularMatrix<arith::CmpIPredicate::sle>(
+            b, loc, payloadArgs, op, operands, result)))
+      return nullptr;
+    return result;
   }
 
   if (auto bitwiseNot = dyn_cast<AtenBitwiseNotOp>(op)) {
@@ -1142,14 +1164,14 @@ public:
              AtenReciprocalOp, AtenBitwiseAndTensorOp, AtenBitwiseOrTensorOp,
              AtenBitwiseXorTensorOp, AtenGtScalarOp, AtenGeScalarOp,
              AtenEqScalarOp, AtenLtScalarOp, AtenLeScalarOp, AtenWhereSelfOp,
-             AtenCeilOp, AtenGtTensorOp, AtenGeTensorOp, AtenEqTensorOp,
+             AtenCeilOp, AtenGtTensorOp, AtenGeTensorOp, AtenEqTensorOp, AtenNeTensorOp,
              AtenLtTensorOp, AtenLeTensorOp, AtenSubScalarOp, AtenAddScalarOp,
              AtenThresholdOp, AtenThresholdBackwardOp, AtenHardtanhBackwardOp,
              AtenCloneOp, AtenSinOp, AtenCosOp, AtenNeScalarOp, AtenNegOp,
              AtenMaskedFillTensorOp, AtenLogicalOrOp, AtenLogicalAndOp,
-             AtenLogicalXorOp, AtenLogicalNotOp, AtenTriuOp, AtenBitwiseNotOp,
-             AtenRoundOp, AtenFillScalarOp, AtenFillTensorOp, AtenAtanOp,
-             AtenRealOp, AtenImagOp>(op))
+             AtenLogicalXorOp, AtenLogicalNotOp, AtenTriuOp, AtenTrilOp,
+             AtenBitwiseNotOp, AtenRoundOp, AtenFillScalarOp, AtenFillTensorOp,
+             AtenAtanOp, AtenRealOp, AtenImagOp>(op))
       return rewriter.notifyMatchFailure(op, "not a supported elementwise op");
 
     if (failed(verifyLinalgCompatibleTypes(op, rewriter)))
@@ -1675,13 +1697,13 @@ void mlir::torch::torch_to_linalg::populateUncategorizedPatternsAndLegality(
       AtenRsqrtOp, AtenAbsOp, AtenReciprocalOp, AtenBitwiseAndTensorOp,
       AtenBitwiseOrTensorOp, AtenBitwiseXorTensorOp, AtenGtScalarOp,
       AtenGeScalarOp, AtenEqScalarOp, AtenLtScalarOp, AtenLeScalarOp,
-      AtenWhereSelfOp, AtenGtTensorOp, AtenGeTensorOp, AtenEqTensorOp,
+      AtenWhereSelfOp, AtenGtTensorOp, AtenGeTensorOp, AtenEqTensorOp, AtenNeTensorOp,
       AtenLtTensorOp, AtenLeTensorOp, AtenThresholdOp, AtenThresholdBackwardOp,
       AtenHardtanhBackwardOp, AtenCloneOp, AtenSinOp, AtenCosOp, AtenNeScalarOp,
       AtenMaskedFillTensorOp, AtenLogicalOrOp, AtenLogicalAndOp, AtenAtanOp,
-      AtenLogicalXorOp, AtenLogicalNotOp, AtenTriuOp, AtenRemainderScalarOp,
-      AtenBitwiseNotOp, AtenRoundOp, AtenFillScalarOp, AtenFillTensorOp,
-      AtenRealOp, AtenImagOp>();
+      AtenLogicalXorOp, AtenLogicalNotOp, AtenTriuOp, AtenTrilOp,
+      AtenRemainderScalarOp, AtenBitwiseNotOp, AtenRoundOp, AtenFillScalarOp,
+      AtenFillTensorOp, AtenRealOp, AtenImagOp>();
   patterns.add<ConvertElementwiseOp>(typeConverter, context);
   target.addIllegalOp<AtenNllLossForwardOp>();
   patterns.add<ConvertAtenDetachOp>(typeConverter, context);
