@@ -856,6 +856,7 @@ cc_library(
     name = "TorchMLIRTorchToTF",
     srcs = glob([
         "lib/Conversion/*.h",
+        "lib/Conversion/TorchToTF/*.h",
         "lib/Conversion/TorchToTF/*.cpp",
     ]),
     hdrs = glob(["include/torch-mlir/Conversion/TorchToTF/*.h"]),

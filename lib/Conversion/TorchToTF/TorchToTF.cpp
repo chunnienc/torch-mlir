@@ -11,6 +11,7 @@
 
 #include "../PassDetail.h"
 
+#include "PopulatePatterns.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
@@ -21,11 +22,16 @@
 #include "mlir/IR/Matchers.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/DialectConversion.h"
+#include "tensorflow/compiler/mlir/tensorflow/ir/tf_dialect.h"
 #include "torch-mlir/Dialect/Torch/IR/TorchDialect.h"
 #include "torch-mlir/Dialect/Torch/IR/TorchOps.h"
 #include "torch-mlir/Dialect/Torch/Utils/Utils.h"
 #include "torch-mlir/Dialect/TorchConversion/IR/TorchConversionDialect.h"
 #include "torch-mlir/Dialect/TorchConversion/Transforms/BackendTypeConversion.h"
+
+namespace mlir {
+namespace torch {
+namespace torch_to_tf {
 
 namespace {
 
@@ -37,14 +43,39 @@ class ConvertTorchToTF : public ConvertTorchToTFBase<ConvertTorchToTF> {
 public:
   ConvertTorchToTF() = default;
 
-  void getDependentDialects(DialectRegistry &registry) const override {}
+  void getDependentDialects(DialectRegistry &registry) const override {
+    registry.insert<TF::TensorFlowDialect>();
+    registry.insert<tensor::TensorDialect>();
+    registry.insert<arith::ArithDialect>();
+    TorchConversion::getBackendTypeConversionDependentDialects(registry);
+  }
 
-  void runOnOperation() override {}
+  void runOnOperation() override {
+    MLIRContext *context = &getContext();
+    ConversionTarget target(*context);
+    target.addLegalDialect<TF::TensorFlowDialect, Torch::TorchDialect,
+                           tensor::TensorDialect, arith::ArithDialect>();
+
+    TypeConverter typeConverter;
+    typeConverter.addConversion([](Type type) { return type; });
+    TorchConversion::setupBackendTypeConversion(target, typeConverter);
+
+    RewritePatternSet patterns(context);
+
+    if (failed(applyPartialConversion(getOperation(), target,
+                                      std::move(patterns)))) {
+      return signalPassFailure();
+    }
+  }
 };
 
 } // namespace
 
-std::unique_ptr<OperationPass<func::FuncOp>>
+} // namespace torch_to_tf
+} // namespace torch
+} // namespace mlir
+
+std::unique_ptr<mlir::OperationPass<mlir::func::FuncOp>>
 mlir::torch::createConvertTorchToTFPass() {
-  return std::make_unique<ConvertTorchToTF>();
+  return std::make_unique<mlir::torch::torch_to_tf::ConvertTorchToTF>();
 }
