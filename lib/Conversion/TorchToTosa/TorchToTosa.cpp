@@ -3941,7 +3941,7 @@ public:
     SmallVector<int32_t> chwToHwc3DTransposeDims({1, 2, 0});
 
     return transposeTensor(op, rewriter, input,
-                           inputRank == 3 ? chwToHwc3DTransposeDims
+                            inputRank == 3 ? chwToHwc3DTransposeDims
                                           : nchwToNhwc4DTransposeDims);
   }
 

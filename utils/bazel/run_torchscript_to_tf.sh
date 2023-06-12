@@ -14,6 +14,7 @@ INPUT_NAME=$(echo "$INPUT_FILENAME" | sed -E 's/\.raw\.mlir$//g')
 PASS_PIPELINE="
     builtin.module(
         torchscript-module-to-torch-backend-pipeline,
+        func.func(torch-backend-to-tf),
         ###### Print torch ops ######
         snapshot-op-locations {tag=torch filename=${INPUT_NAME}.torch.mlir},
         print-op-stats,
@@ -40,11 +41,11 @@ PASS_PIPELINE="
         print-op-stats,
     )"
 
-PASS_PIPELINE="builtin.module(
-    torchscript-module-to-torch-backend-pipeline,
-    func.func(torch-backend-to-tf),
-    print-op-stats,
-)"
+# PASS_PIPELINE="builtin.module(
+#     torchscript-module-to-torch-backend-pipeline,
+#     func.func(torch-backend-to-tf),
+#     print-op-stats,
+# )"
 
 PASS_PIPELINE_RAW=$PASS_PIPELINE
 # Remove comment lines
