@@ -61,11 +61,6 @@
 //   TorchToTFOptions options;
 // };
 
-// void populatePoolingOpPatternsAndLegality(TypeConverter &typeConverter,
-//                                           RewritePatternSet &patterns,
-//                                           ConversionTarget &target,
-//                                           const TorchToTFOptions &options);
-
 // } // namespace torch_to_tf
 // } // namespace torch
 // } // namespace mlir

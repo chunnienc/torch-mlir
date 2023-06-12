@@ -352,6 +352,168 @@ public:
   }
 };
 
+class ConvertAtenBatchNormOp : public OpConversionPattern<AtenBatchNormOp> {
+public:
+  using OpConversionPattern<AtenBatchNormOp>::OpConversionPattern;
+  using OpAdaptor = typename AtenBatchNormOp::Adaptor;
+
+  LogicalResult
+  matchAndRewrite(AtenBatchNormOp op, OpAdaptor adaptor,
+                  ConversionPatternRewriter &rewriter) const override {
+    // Not a ranked tensor output
+    if (!adaptor.getInput().getType().dyn_cast<RankedTensorType>()) {
+      return rewriter.notifyMatchFailure(
+          op, "Only ranked tensor types are supported");
+    }
+
+    auto outType = getTypeConverter()->convertType(op.getType());
+
+    // Note: cudnn_enabled is not handled.
+
+    // FIXME: Handle training and momentum.
+    if (op.getMomentum().getType().isa<Torch::NoneType>()) {
+      return rewriter.notifyMatchFailure(op, "Unsupported None for momentum");
+    }
+
+    auto meanType = adaptor.getRunningMean().getType().dyn_cast<TensorType>();
+    auto varianceType =
+        adaptor.getRunningVar().getType().dyn_cast<TensorType>();
+    if (!varianceType || !meanType) {
+      return rewriter.notifyMatchFailure(
+          op, "Only ranked tensor types are supported");
+    }
+
+    // Normalization ops perform elementwise ops of a single mean/stdev value
+    // against the feature map and because input is NCHW, the rank-1 value
+    // must be reshaped so it sits on the same dim as 'C'.
+    auto reshapeToNormInputDim = [&](Operation *op,
+                                     ConversionPatternRewriter &rewriter,
+                                     TypeConverter *converter, Type outType,
+                                     const Value toBcast, Value &result) {
+      RankedTensorType toBcastType =
+          toBcast.getType().dyn_cast<RankedTensorType>();
+      if (toBcastType.getRank() > 1)
+        return rewriter.notifyMatchFailure(op, "Rank cannot be more than 1");
+
+      RankedTensorType outTensorType = outType.cast<RankedTensorType>();
+      SmallVector<int64_t> newShape = {
+          makeShapeTorchCompatible(toBcastType.getShape())[0]};
+      for (auto i = 2; i < outTensorType.getRank(); ++i) {
+        newShape.push_back(1);
+      }
+      auto newType = RankedTensorType::get(makeShapeLLVMCompatible(newShape),
+                                           outTensorType.getElementType());
+
+      result = rewriter.create<TF::ReshapeOp>(
+          op->getLoc(), newType, toBcast,
+          getConstTensor<int64_t>(rewriter, op, newShape,
+                                  {static_cast<int32_t>(newShape.size())})
+              .value());
+
+      return success();
+    };
+
+    Value meanVal, varianceVal, weightVal, biasVal;
+    assert(meanType.getNumElements() != 0 &&
+           varianceType.getNumElements() != 0);
+    if (failed(reshapeToNormInputDim(op.getOperation(), rewriter,
+                                     getTypeConverter(), outType,
+                                     adaptor.getRunningMean(), meanVal)))
+      return rewriter.notifyMatchFailure(op, "Failed to reshape running mean");
+
+    if (failed(reshapeToNormInputDim(op.getOperation(), rewriter,
+                                     getTypeConverter(), outType,
+                                     adaptor.getRunningVar(), varianceVal)))
+      return rewriter.notifyMatchFailure(op,
+                                         "Failed to reshape running variance");
+
+    if (failed(reshapeToNormInputDim(op.getOperation(), rewriter,
+                                     getTypeConverter(), outType,
+                                     adaptor.getWeight(), weightVal)))
+      return rewriter.notifyMatchFailure(op, "Failed to reshape weight");
+
+    if (failed(reshapeToNormInputDim(op.getOperation(), rewriter,
+                                     getTypeConverter(), outType,
+                                     adaptor.getBias(), biasVal)))
+      return rewriter.notifyMatchFailure(op, "Failed to reshape bias");
+
+    double eps;
+    if (!matchPattern(op.getEps(), m_TorchConstantFloat(&eps)))
+      return rewriter.notifyMatchFailure(op, "eps must be a scalar constant");
+
+    auto epsilonConst = getConstTensorSingleF32(rewriter, op, eps);
+
+    auto batchNorm =
+        computeBatchNorm(op, rewriter, outType, adaptor.getInput(), varianceVal,
+                         epsilonConst, meanVal, weightVal, biasVal);
+
+    rewriter.replaceOp(op, {batchNorm});
+
+    return success();
+  }
+
+  // Create a 32-bit float constant operator from a float
+  Value getConstTensorSingleF32(PatternRewriter &rewriter, Operation *op,
+                                float val) const {
+    auto const_type = RankedTensorType::get({}, rewriter.getF32Type());
+    auto const_attr = DenseElementsAttr::get(const_type, val);
+
+    auto const_op =
+        rewriter.create<TF::ConstOp>(op->getLoc(), const_type, const_attr);
+    return const_op.getResult();
+  }
+
+  Value computeBatchNorm(Operation *op, ConversionPatternRewriter &rewriter,
+                         Type outType, Value input, Value variance, Value eps,
+                         Value mean, Value weight, Value bias) const {
+    // For PyTorch:
+    //   scale  = gamma = weight
+    //   offset = beta  = bias
+    // Lowering:
+    // fused batchnorm = (input-mean) * scale * rsqrt(var+epsilon)) + offset
+    //
+    // shape_0 = ones(input.rank)
+    // shape_0[input.rank-1] = input.shape[input.rank-1]
+    // shape_1 = ones(1)
+    //
+    // bmean  = reshape(mean, shape_0)
+    // bscale = reshape(scale, shape_0)
+    // boffset= reshape(offset, shape_0)
+    // beps   = reshape(epsilon, shape_1)
+    //
+    // op1 = sub(input, bmean)
+    // op2 = add(var, beps)
+    // op3 = rsqrt(op2)
+    // bvar = reshape(op3, shape_0)
+    // op4 = mul(op1, bvar)
+    // op5 = mul(op4, bscale)
+    // op6 = add(op5, boffset)
+
+    auto op1SubInputMean =
+        rewriter.create<TF::SubOp>(op->getLoc(), outType, input, mean);
+
+    auto op2AddVarEpsilon = rewriter.create<TF::AddOp>(
+        op->getLoc(), variance.getType(), variance, eps);
+
+    auto op3RsqrtOp2 = rewriter.create<TF::RsqrtOp>(
+        op->getLoc(), variance.getType(), op2AddVarEpsilon.getResult());
+
+    auto op4MulOp1Op3 = rewriter.create<TF::MulOp>(op->getLoc(), outType,
+                                                   op1SubInputMean.getResult(),
+                                                   op3RsqrtOp2.getResult());
+
+    auto op5MulOp4Scale = rewriter.create<TF::MulOp>(
+        op->getLoc(), outType, op4MulOp1Op3.getResult(), weight);
+
+    return rewriter
+        .create<TF::AddOp>(op->getLoc(), outType, op5MulOp4Scale.getResult(),
+                           bias)
+        .getResult();
+  }
+};
+
+} // namespace
+
 class ConvertTorchToTF : public ConvertTorchToTFBase<ConvertTorchToTF> {
 public:
   ConvertTorchToTF() = default;
@@ -379,6 +541,8 @@ public:
     patterns.add<ConvertAtenMaxPool2dOp>(typeConverter, context);
     target.addIllegalOp<AtenAvgPool2dOp>();
     patterns.add<ConvertAtenAvgPool2dOp>(typeConverter, context);
+    target.addIllegalOp<AtenBatchNormOp>();
+    patterns.add<ConvertAtenBatchNormOp>(typeConverter, context);
 
     if (failed(applyPartialConversion(getOperation(), target,
                                       std::move(patterns)))) {
@@ -386,8 +550,6 @@ public:
     }
   }
 };
-
-} // namespace
 
 } // namespace torch_to_tf
 } // namespace torch
